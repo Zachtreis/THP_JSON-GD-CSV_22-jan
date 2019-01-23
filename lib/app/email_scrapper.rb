@@ -1,19 +1,14 @@
-require 'rubygems'
-require 'nokogiri'         
-require 'open-uri'
-require 'json'
-require 'google_drive'
-require 'csv'
-require "pry"
-require 'resolv-replace'
-
-
-
 class EmailScrapper
 
-    attr_accessor :email, :ville
-    @@all_users = []
-        
+    attr_accessor :global_list
+       
+    def perform
+        create_hash_city_email
+        @city_email = []
+        @city_email = @global_list
+    end
+
+
     # Cree un array comportant toutes les villes du Val d'Oise
     def get_city
         page = Nokogiri::HTML(open("http://annuaire-des-mairies.com/val-d-oise.html"))
@@ -53,48 +48,10 @@ class EmailScrapper
         villes = get_city
         url_villes = get_link
         townhall_emails = get_townhall_email(url_villes)
-        for i in (0...villes.length) do
-            emails_mairies << {"#{villes[i]}" => "#{townhall_emails[i]}"}
-        end    
-    return emails_mairies
+        @global_list = Hash.new
+        @global_list = Hash[villes.zip(townhall_emails)]
+        return @global_list
     end
 
-    def save_as_JSON
-        emails_mairies = create_hash_city_email
-        file = File.new("emails_mairies.json","a")
-        emails_mairies.each do |hash|
-            file.puts hash
-        end
-        file.close
-    end
-
-    def save_as_spreadsheet
-    end
-
-    def save_as_CSV
-        villes = get_city
-        url_villes = get_link
-        townhall_emails = get_townhall_email(url_villes)
-        list_csv = villes.zip(townhall_emails)
-        CSV.generate do |csv|
-            list_csv.each do |el|
-                csv << el
-            end
-        end
-        # emails_mairies = create_hash_city_email.map { |el| el.join(",")}.join("\n")
-        # emails_mairies.each do |hash|
-        #     csv.open("emails_mairies.csv", "w") do |csv|
-        #         csv << hash
-        #     end
-        # end
-        # binding pry
-    end
 end
 
-
-            
-
-valdoise = EmailScrapper.new
-# print valdoise.create_hash_city_email
-# #valdoise.save_as_JSON
-valdoise.save_as_CSV
